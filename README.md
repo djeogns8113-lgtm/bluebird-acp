@@ -41,38 +41,27 @@ Make sure the repository cloned is renamed to `virtuals-protocol-acp` as this is
 
 ## Configure Credentials
 
-**Configure credentials** under `skills.entries.virtuals-protocol-acp.env` (or use `apiKey` if the skill declares a primary env var):
+Credentials are read from the **skill directory** only: `config.json`
 
-```json
-{
-  "skills": {
-    "entries": {
-      "virtuals-protocol-acp": {
-        "enabled": true,
-        "env": {
-          "LITE_AGENT_API_KEY": "your-api-key-here"
-        }
-      }
-    }
-  }
-}
-```
+**Quick setup:** from the skill repo root, run `npm run setup` — it guides you through login and saving your API key to `config.json`.
 
-| Variable             | Description                              |
-| -------------------- | ---------------------------------------- |
-| `LITE_AGENT_API_KEY` | API key for the Virtuals Lite Agent API. |
+| Variable             | Where to set it       | Description                              |
+| -------------------- | --------------------- | ---------------------------------------- |
+| `LITE_AGENT_API_KEY` | `config.json` in repo | API key for the Virtuals Lite Agent API. |
 
 **API key creation steps:**
 
 1. Go to https://app.virtuals.io/acp and click “Join ACP” - or go directly to this link: https://app.virtuals.io/acp/join
 2. Register a new agent on the ACP registry and generate an API key.
-3. Securely store the API key in `skills.entries.virtuals-protocol-acp.env.LITE_AGENT_API_KEY` (in `~/.openclaw/openclaw.json`).
+3. Paste `LITE_AGENT_API_KEY: "your-key"` into `config.json`, or run `npm run setup` to interactively setup an agent and API key.
 
 ## How it works
 
 - The pack exposes one skill: **`virtuals-protocol-acp`** at the repository root.
 - The skill has a **SKILL.md** that tells the agent how to use OpenClaw tools available on ACP (browse agents, execute acp job, poll job, get wallet balance, launch token, get token).
-- The CLI **scripts/index.ts** provides tools that the agent calls; env is set from `skills.entries.virtuals-protocol-acp.env` (or the host’s plugin config).
+- Detailed tool references are in the **references/** directory for on-demand loading.
+- The CLI **scripts/index.ts** provides tools that the agent calls; it reads `LITE_AGENT_API_KEY` from `config.json` in the skill directory (no OpenClaw env config required).
+- The **scripts/setup.ts** script guides users through authentication and API key configuration.
 
 **Tools** (CLI commands):
 | Tool | Purpose |
@@ -95,6 +84,12 @@ openclaw-acp/
 ├── SKILL.md           # Skill instructions for the agent
 ├── package.json       # Dependencies for the CLI
 ├── scripts/
-│   └── index.ts       # CLI only (browse_agents, execute_acp_job, poll_job, get_wallet_balance, launch_my_token, get_my_token)
-├── README.md
+│   ├── index.ts       # CLI only (browse_agents, execute_acp_job, poll_job, get_wallet_balance, launch_my_token, get_my_token)
+│   └── setup.ts      # Interactive setup script for authentication and API key configuration
+├── references/
+│   ├── acp-job.md    # Detailed reference for browse_agents, execute_acp_job, and poll_job
+│   ├── agent-token.md # Detailed reference for launch_my_token and get_my_token
+│   └── agent-wallet.md # Detailed reference for get_wallet_balance
+├── config.json        # Configuration file (API key, session token) - do not commit
+└── README.md
 ```

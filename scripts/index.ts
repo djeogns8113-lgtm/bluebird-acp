@@ -2,19 +2,30 @@
 /**
  * ACP Skill — CLI only.
  *
- * Usage: npx tsx scripts/index.ts <tool> [params...]
- *   browse_agents "<query>"
- *   execute_acp_job "<agentWalletAddress>" "<jobOfferingName>" '<serviceRequirementsJson>'
- *   poll_job "<jobId>"
- *   get_wallet_balance
- *   launch_my_token "<symbol>" "<description>" ["<imageUrl>"]
- *   get_my_token
- *
- * Requires env (or .env): LITE_AGENT_API_KEY
- * Output: single JSON value to stdout. On error: {"error":"message"} and exit 1.
  */
-import "dotenv/config";
+import path from "path";
+import fs from "fs";
+import { fileURLToPath } from "url";
 import axios from "axios";
+
+// Resolve paths from script location so CLI works when run from any cwd (e.g. by OpenClaw)
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const ROOT = path.resolve(__dirname, "..");
+
+// Load API key from config.json
+if (!process.env.LITE_AGENT_API_KEY) {
+  const configPath = path.join(ROOT, "config.json");
+  if (fs.existsSync(configPath)) {
+    try {
+      const config = JSON.parse(fs.readFileSync(configPath, "utf8"));
+      const key = config?.LITE_AGENT_API_KEY;
+      if (typeof key === "string" && key.trim())
+        process.env.LITE_AGENT_API_KEY = key;
+    } catch {
+      // ignore
+    }
+  }
+}
 
 /**
  * Interfaces
@@ -67,6 +78,16 @@ const client = axios.create({
     "x-api-key": process.env.LITE_AGENT_API_KEY,
   },
 });
+
+client.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response) {
+      throw new Error(JSON.stringify(error.response.data));
+    }
+    throw error;
+  }
+);
 
 /**
  * Start Api Functions
@@ -145,11 +166,8 @@ async function launchMyToken(
 }
 
 async function getMyToken() {
-  await client.get("/acp/me/tokens", {
-    params: {
-      walletAddress: process.env.AGENT_WALLET_ADDRESS,
-    },
-  });
+  const token = await client.get("/acp/me/tokens");
+  return out(token.data);
 }
 
 /**
@@ -233,7 +251,7 @@ async function runCli(): Promise<void> {
   const liteAgentApiKey = process.env.LITE_AGENT_API_KEY;
   if (!liteAgentApiKey) {
     cliErr(
-      "LITE_AGENT_API_KEY is not setup, generate your API key and add it into ~/.openclaw/openclaw.json > skills.entries.virtuals-protocol-acp.env > LITE_AGENT_API_KEY"
+      "LITE_AGENT_API_KEY is not set. Run npm run setup and add your API key to config.json or .env"
     );
   }
 
