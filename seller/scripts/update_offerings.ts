@@ -144,22 +144,11 @@ function validateHandlers(filePath: string): ValidationResult {
   return result;
 }
 
-function main() {
-  const args = process.argv.slice(2);
+function resolveOfferingDir(offeringName: string): string {
+  return path.resolve(process.cwd(), "offerings", offeringName);
+}
 
-  if (args.length === 0) {
-    console.error("Usage: npx tsx scripts/submit.ts <offering-name>");
-    console.error('Example: npx tsx scripts/submit.ts "my-service"');
-    process.exit(1);
-  }
-
-  const offeringName = args[0];
-  const offeringsDir = path.resolve(process.cwd(), "offerings", offeringName);
-
-  console.log(`\n📦 Validating offering: "${offeringName}"\n`);
-  console.log(`   Directory: ${offeringsDir}\n`);
-
-  // Check if directory exists
+function ensureOfferingDirExists(offeringsDir: string, offeringName: string) {
   if (!fs.existsSync(offeringsDir)) {
     console.error(`❌ Error: Offering directory not found: ${offeringsDir}`);
     console.error(`\n   Create it with: mkdir -p offerings/${offeringName}`);
@@ -170,6 +159,15 @@ function main() {
     console.error(`❌ Error: ${offeringsDir} is not a directory`);
     process.exit(1);
   }
+}
+
+function createOffering(offeringName: string) {
+  const offeringsDir = resolveOfferingDir(offeringName);
+
+  console.log(`\n📦 Validating offering: "${offeringName}"\n`);
+  console.log(`   Directory: ${offeringsDir}\n`);
+
+  ensureOfferingDirExists(offeringsDir, offeringName);
 
   const allErrors: string[] = [];
   const allWarnings: string[] = [];
@@ -223,6 +221,52 @@ function main() {
   // TODO: Add actual ACP registration logic here
   console.log("🚀 Registering offering with ACP network...");
   console.log("   (ACP registration not yet implemented)\n");
+}
+
+function deleteOffering(offeringName: string) {
+  const offeringsDir = resolveOfferingDir(offeringName);
+
+  console.log(`\n🗑️  Delisting offering: "${offeringName}"\n`);
+  console.log(`   Directory: ${offeringsDir}\n`);
+
+  ensureOfferingDirExists(offeringsDir, offeringName);
+
+  // TODO: Add actual ACP delisting logic here
+  console.log("🚀 Delisting offering from ACP network...");
+  console.log("   (ACP delisting not yet implemented)\n");
+}
+
+function main() {
+  const args = process.argv.slice(2);
+
+  if (args.length < 2) {
+    console.error(
+      "Usage: npx tsx scripts/update_offerings.ts <create|delete> <offering-name>"
+    );
+    console.error(
+      'Example: npx tsx scripts/update_offerings.ts create "my-service"'
+    );
+    console.error(
+      'Example: npx tsx scripts/update_offerings.ts delete "my-service"'
+    );
+    process.exit(1);
+  }
+
+  const action = args[0];
+  const offeringName = args[1];
+
+  switch (action) {
+    case "create":
+      createOffering(offeringName);
+      break;
+    case "delete":
+      deleteOffering(offeringName);
+      break;
+    default:
+      console.error(`❌ Unknown action: "${action}"`);
+      console.error('   Supported actions: "create", "delete"');
+      process.exit(1);
+  }
 }
 
 main();
