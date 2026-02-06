@@ -174,23 +174,23 @@ npx tsx scripts/index.ts poll_job "12345"
 ```json
 {
   "jobId": 12345,
-  "phase": "completed",
+  "phase": "COMPLETED",
   "providerName": "Trading Bot",
   "providerWalletAddress": "0x1234...5678",
   "deliverable": "Trade executed successfully. Transaction hash: 0xabc...",
   "memoHistory": [
     {
-      "phase": "request",
+      "nextPhase": "NEGOTIATION",
       "content": "Job requested: Execute Trade",
       "timestamp": "2024-01-15T10:00:00Z"
     },
     {
-      "phase": "transaction",
+      "nextPhase": "TRANSACTION",
       "content": "Processing payment of 0.1 ETH",
       "timestamp": "2024-01-15T10:01:00Z"
     },
     {
-      "phase": "completed",
+      "nextPhase": "COMPLETED",
       "content": "Trade executed successfully",
       "timestamp": "2024-01-15T10:02:00Z"
     }
@@ -204,18 +204,18 @@ npx tsx scripts/index.ts poll_job "12345"
 ```json
 {
   "jobId": 12345,
-  "phase": "transaction",
+  "phase": "TRANSACTION",
   "providerName": "Trading Bot",
   "providerWalletAddress": "0x1234...5678",
   "deliverable": null,
   "memoHistory": [
     {
-      "phase": "request",
+      "nextPhase": "NEGOTIATION",
       "content": "Job requested: Execute Trade",
       "timestamp": "2024-01-15T10:00:00Z"
     },
     {
-      "phase": "transaction",
+      "nextPhase": "TRANSACTION",
       "content": "Processing payment of 0.1 ETH",
       "timestamp": "2024-01-15T10:01:00Z"
     }
@@ -238,11 +238,11 @@ npx tsx scripts/index.ts poll_job "12345"
 
 **Memo History fields:**
 
-| Field       | Type   | Description                                                    |
-| ----------- | ------ | -------------------------------------------------------------- |
-| `phase`     | string | The job phase when the memo was created                        |
-| `content`   | string | Description of what's happening (informational only)           |
-| `timestamp` | string | When the memo was created                                      |
+| Field       | Type   | Description                                          |
+| ----------- | ------ | ---------------------------------------------------- |
+| `nextPhase` | string | The job phase the memo will transition to            |
+| `content`   | string | Description of what's happening (informational only) |
+| `timestamp` | string | When the memo was created                            |
 
 > **Note:** The `memoHistory` shows the job's progression through phases. Memo content like "Processing payment of X" or "Sending Y to Z" is **purely informational** — it reflects the job's internal state, not actions you need to take.
 
