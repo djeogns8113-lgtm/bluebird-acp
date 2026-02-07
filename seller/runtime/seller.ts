@@ -83,19 +83,15 @@ function resolveOfferingName(data: AcpJobEventData): string | undefined {
 function resolveServiceRequirements(
   data: AcpJobEventData
 ): Record<string, any> {
-  // Context may carry them directly
-  if (data.context?.serviceRequirements) {
-    return data.context.serviceRequirements;
-  }
-  // Fallback: first memo whose nextPhase = NEGOTIATION often carries the buyer's request
-  const reqMemo = data.memos.find(
+  // Memo with nextPhase = NEGOTIATION carries the buyer's request
+  const negotiationMemo = data.memos.find(
     (m) => m.nextPhase === AcpJobPhase.NEGOTIATION
   );
-  if (reqMemo?.content) {
+  if (negotiationMemo) {
     try {
-      return JSON.parse(reqMemo.content);
+      return JSON.parse(negotiationMemo.content).requirement;
     } catch {
-      return { raw: reqMemo.content };
+      return {};
     }
   }
   return {};
