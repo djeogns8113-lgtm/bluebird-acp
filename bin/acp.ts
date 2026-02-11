@@ -48,175 +48,218 @@ function removeFlagWithValue(args: string[], flag: string): string[] {
 
 // -- Help text --
 
-const HELP = `
-acp — Agent Commerce Protocol CLI
+const isTTY = process.stdout.isTTY === true;
+const bold = (s: string) => (isTTY ? `\x1b[1m${s}\x1b[0m` : s);
+const dim = (s: string) => (isTTY ? `\x1b[2m${s}\x1b[0m` : s);
+const cyan = (s: string) => (isTTY ? `\x1b[36m${s}\x1b[0m` : s);
+const yellow = (s: string) => (isTTY ? `\x1b[33m${s}\x1b[0m` : s);
 
-Usage:  acp <command> [subcommand] [args] [flags]
+function cmd(command: string, desc: string, indent = 2): string {
+  const pad = 43 - indent;
+  return `${" ".repeat(indent)}${bold(command.padEnd(pad))}${dim(desc)}`;
+}
 
-Commands:
-  setup                                  Interactive setup (login + create agent)
-  login                                  Re-authenticate session
-  whoami                                 Show current agent profile summary
+function flag(name: string, desc: string): string {
+  return `${" ".repeat(4)}${yellow(name.padEnd(41))}${dim(desc)}`;
+}
 
-  wallet address                         Get agent wallet address
-  wallet balance                         Get all token balances
+function section(title: string): string {
+  return `  ${cyan(title)}`;
+}
 
-  browse <query>                         Search agents on the marketplace
+function buildHelp(): string {
+  const lines = [
+    "",
+    `  ${bold("acp")} ${dim("—")} Agent Commerce Protocol CLI`,
+    "",
+    `  ${dim("Usage:")}  ${bold("acp")} ${dim("<command> [subcommand] [args] [flags]")}`,
+    "",
+    section("Getting Started"),
+    cmd("setup", "Interactive setup (login + create agent)"),
+    cmd("login", "Re-authenticate session"),
+    cmd("whoami", "Show current agent profile summary"),
+    "",
+    section("Agent Management"),
+    cmd("agent list", "Show all agents (syncs from server)"),
+    cmd("agent create <agent-name>", "Create a new agent"),
+    cmd("agent switch <agent-name>", "Switch the active agent"),
+    "",
+    section("Wallet"),
+    cmd("wallet address", "Get agent wallet address"),
+    cmd("wallet balance", "Get all token balances"),
+    "",
+    section("Token"),
+    cmd("token launch <symbol> <desc>", "Launch agent token"),
+    flag("--image <url>", "Token image URL"),
+    cmd("token info", "Get agent token details"),
+    "",
+    section("Profile"),
+    cmd("profile show", "Show full agent profile"),
+    cmd("profile update name <value>", "Update agent name"),
+    cmd("profile update description <value>", "Update agent description"),
+    cmd("profile update profilePic <url>", "Update agent profile picture"),
+    "",
+    section("Marketplace"),
+    cmd("browse <query>", "Search agents on the marketplace"),
+    "",
+    cmd("job create <wallet> <offering>", "Start a job with an agent"),
+    flag("--requirements '<json>'", "Service requirements (JSON)"),
+    cmd("job status <job-id>", "Check job status"),
+    cmd("job active [page] [pageSize]", "List active jobs"),
+    cmd("job completed [page] [pageSize]", "List completed jobs"),
+    "",
+    section("Selling Services"),
+    cmd("sell init <offering-name>", "Scaffold a new offering"),
+    cmd("sell create <offering-name>", "Register offering on ACP"),
+    cmd("sell delete <offering-name>", "Delist offering from ACP"),
+    cmd("sell list", "Show all offerings with status"),
+    cmd("sell inspect <offering-name>", "Detailed view of an offering"),
+    "",
+    cmd("sell resource init <resource-name>", "Scaffold a new resource"),
+    cmd("sell resource create <resource-name>", "Register resource on ACP"),
+    cmd("sell resource delete <resource-name>", "Delete resource from ACP"),
+    "",
+    section("Seller Runtime"),
+    cmd("serve start", "Start the seller runtime"),
+    cmd("serve stop", "Stop the seller runtime"),
+    cmd("serve status", "Show seller runtime status"),
+    cmd("serve logs", "Show recent seller logs"),
+    flag("--follow, -f", "Tail logs in real time"),
+    "",
+    section("Flags"),
+    flag("--json", "Output raw JSON (for agents/scripts)"),
+    flag("--help, -h", "Show this help"),
+    flag("--version, -v", "Show version"),
+    "",
+  ];
+  return lines.join("\n");
+}
 
-  job create <wallet> <offering> [flags] Start a job with an agent
-    --requirements '<json>'              Service requirements (JSON)
-  job status <jobId>                     Check job status
-  job active [page] [pageSize]            List active jobs (or use --page/--pageSize)
-  job completed [page] [pageSize]         List completed jobs (or use --page/--pageSize)
+function buildCommandHelp(command: string): string | undefined {
+  const h: Record<string, () => string> = {
+    setup: () => [
+      "",
+      `  ${bold("acp setup")} ${dim("— Interactive setup")}`,
+      "",
+      `  ${dim("Guides you through:")}`,
+      `    1. Login to app.virtuals.io`,
+      `    2. Select or create an agent`,
+      `    3. Optionally launch an agent token`,
+      "",
+    ].join("\n"),
 
-  token launch <symbol> <desc> [flags]   Launch agent token
-    --image <url>                        Token image URL
-  token info                             Get agent token details
+    agent: () => [
+      "",
+      `  ${bold("acp agent")} ${dim("— Manage multiple agents")}`,
+      "",
+      cmd("list", "Show all agents (fetches from server)"),
+      cmd("create <agent-name>", "Create a new agent"),
+      cmd("switch <agent-name>", "Switch active agent (regenerates API key)"),
+      "",
+      `  ${dim("All commands auto-prompt login if your session has expired.")}`,
+      "",
+    ].join("\n"),
 
-  profile show                           Show full agent profile
-  profile update name <value>            Update agent name
-  profile update description <value>    Update agent description
-  profile update profilePic <value>     Update agent profile picture URL
+    wallet: () => [
+      "",
+      `  ${bold("acp wallet")} ${dim("— Manage your agent wallet")}`,
+      "",
+      cmd("address", "Get your wallet address (Base chain)"),
+      cmd("balance", "Get all token balances in your wallet"),
+      "",
+    ].join("\n"),
 
-  agent list                              Show all agents (syncs from server)
-  agent create <name>                    Create a new agent
-  agent switch <name>                    Switch the active agent
+    browse: () => [
+      "",
+      `  ${bold("acp browse <query>")} ${dim("— Search and discover agents")}`,
+      "",
+      `  ${dim("Examples:")}`,
+      `    acp browse "trading"`,
+      `    acp browse "data analysis"`,
+      `    acp browse "content generation" --json`,
+      "",
+    ].join("\n"),
 
-  sell init <name>                       Scaffold a new offering
-  sell create <name>                     Validate + register offering on ACP
-  sell delete <name>                     Delist offering from ACP
-  sell list                              Show all offerings with status
-  sell inspect <name>                   Detailed view of an offering
-  sell resource init <name>              Scaffold a new resource
-  sell resource create <name>            Validate + register resource on ACP
-  sell resource delete <name>            Delete resource from ACP
+    job: () => [
+      "",
+      `  ${bold("acp job")} ${dim("— Create and monitor jobs")}`,
+      "",
+      cmd("create <wallet> <offering>", "Start a job with an agent"),
+      flag("--requirements '<json>'", "Service requirements (JSON)"),
+      `    ${dim("Example: acp job create 0x1234 \"Execute Trade\" --requirements '{\"pair\":\"ETH/USDC\"}'")}`,
+      "",
+      cmd("status <job-id>", "Check job status and deliverable"),
+      `    ${dim("Example: acp job status 12345")}`,
+      "",
+      cmd("active [page] [pageSize]", "List active jobs"),
+      cmd("completed [page] [pageSize]", "List completed jobs"),
+      `    ${dim("Pagination: positional args or --page N --pageSize N")}`,
+      "",
+    ].join("\n"),
 
-  serve start                            Start the seller runtime
-  serve stop                             Stop the seller runtime
-  serve status                           Show seller runtime status
-  serve logs                             Show recent seller logs
-  serve logs --follow                    Tail seller logs in real time
+    token: () => [
+      "",
+      `  ${bold("acp token")} ${dim("— Manage your agent token")}`,
+      "",
+      cmd("launch <symbol> <description>", "Launch your agent's token (one per agent)"),
+      flag("--image <url>", "Token image URL"),
+      `    ${dim("Example: acp token launch MYAGENT \"Agent governance token\"")}`,
+      "",
+      cmd("info", "Get your agent's token details"),
+      "",
+    ].join("\n"),
 
-Global flags:
-  --json                                 Output raw JSON (for agents/scripts)
-  --help, -h                             Show this help
-  --version, -v                          Show version
-`;
+    profile: () => [
+      "",
+      `  ${bold("acp profile")} ${dim("— Manage your agent profile")}`,
+      "",
+      cmd("show", "Show your full agent profile"),
+      "",
+      cmd("update name <value>", "Update your agent's name"),
+      cmd("update description <value>", "Update your agent's description"),
+      cmd("update profilePic <url>", "Update your agent's profile picture"),
+      "",
+      `  ${dim("Example: acp profile update description \"Specializes in trading\"")}`,
+      "",
+    ].join("\n"),
 
-const COMMAND_HELP: Record<string, string> = {
-  setup: `
-acp setup — Interactive setup
+    sell: () => [
+      "",
+      `  ${bold("acp sell")} ${dim("— Create and manage service offerings")}`,
+      "",
+      cmd("init <offering-name>", "Scaffold a new offering"),
+      cmd("create <offering-name>", "Register offering on ACP"),
+      cmd("delete <offering-name>", "Delist offering from ACP"),
+      cmd("list", "Show all offerings with status"),
+      cmd("inspect <offering-name>", "Detailed view of an offering"),
+      "",
+      cmd("resource init <resource-name>", "Scaffold a new resource"),
+      cmd("resource create <resource-name>", "Register resource on ACP"),
+      cmd("resource delete <resource-name>", "Delete resource from ACP"),
+      "",
+      `  ${dim("Workflow:")}`,
+      `    acp sell init my_service`,
+      `    ${dim("# Edit offerings/my_service/offering.json and handlers.ts")}`,
+      `    acp sell create my_service`,
+      `    acp serve start`,
+      "",
+    ].join("\n"),
 
-Guides you through:
-  1. Login to app.virtuals.io
-  2. Create an agent (name + wallet + API key)
-  3. Optionally launch an agent token
-`,
-  wallet: `
-acp wallet — Manage your agent wallet
+    serve: () => [
+      "",
+      `  ${bold("acp serve")} ${dim("— Manage the seller runtime")}`,
+      "",
+      cmd("start", "Start the seller runtime (listens for jobs)"),
+      cmd("stop", "Stop the seller runtime"),
+      cmd("status", "Show whether the seller is running"),
+      cmd("logs", "Show recent seller logs (last 50 lines)"),
+      flag("--follow, -f", "Tail logs in real time (Ctrl+C to stop)"),
+      "",
+    ].join("\n"),
+  };
 
-Subcommands:
-  address     Get your wallet address (Base chain)
-  balance     Get all token balances in your wallet
-`,
-  browse: `
-acp browse <query> — Search and discover agents
-
-Examples:
-  acp browse "trading"
-  acp browse "data analysis"
-  acp browse "content generation" --json
-`,
-  job: `
-acp job — Create and monitor jobs
-
-Subcommands:
-  create <wallet> <offering> [--requirements '<json>']
-    Start a job with an agent.
-    Example: acp job create 0x1234 "Execute Trade" --requirements '{"pair":"ETH/USDC"}'
-
-  status <jobId>
-    Check job status and deliverable.
-    Example: acp job status 12345
-
-  active [page] [pageSize]
-    List active jobs. Pagination: positionals (e.g. acp job active 1 2) or
-    --page N --pageSize N. 
-    Example: acp job active --page 1 --pageSize 2
-
-  completed [page] [pageSize]
-    List completed jobs. Same pagination as active.
-    Example: acp job completed --page 1 --pageSize 2
-`,
-  token: `
-acp token — Manage your agent token
-
-Subcommands:
-  launch <symbol> <description> [--image <url>]
-    Launch your agent's token (one per agent).
-    Example: acp token launch MYAGENT "Agent governance token"
-
-  info
-    Get your agent's token details.
-`,
-  profile: `
-acp profile — Manage your agent profile
-
-Subcommands:
-  show                    Show your full agent profile
-  
-  update name <value>     Update your agent's name
-    Example: acp profile update name "MyAgent"
-  
-  update description <value>
-    Update your agent's marketplace description.
-    Example: acp profile update description "Specializes in trading and analysis"
-  
-  update profilePic <value>
-    Update your agent's profile picture URL.
-    Example: acp profile update profilePic "https://example.com/avatar.png"
-`,
-  sell: `
-acp sell — Create and manage service offerings and resources
-
-Subcommands:
-  init <name>       Scaffold a new offering (creates template files)
-  create <name>     Validate and register offering on ACP
-  delete <name>     Delist offering from ACP
-  list              Show all offerings with status
-  inspect <name>    Detailed view of a single offering
-
-  resource init <name>     Scaffold a new resource (creates template files)
-  resource create <name>  Validate and register resource on ACP
-  resource delete <name>   Delete resource from ACP
-
-Example workflow:
-  acp sell init my_service
-  # Edit src/seller/offerings/my_service/offering.json and handlers.ts
-  acp sell create my_service
-  acp serve start
-`,
-  serve: `
-acp serve — Manage the seller runtime process
-
-Subcommands:
-  start     Start the seller runtime (listens for incoming jobs)
-  stop      Stop the seller runtime
-  status    Show whether the seller is running
-  logs      Show recent seller logs (last 50 lines)
-  logs --follow   Tail seller logs in real time (Ctrl+C to stop)
-`,
-  agent: `
-acp agent — Manage multiple agents
-
-Subcommands:
-  list              Show all agents (fetches from server)
-  create <name>     Create a new agent
-  switch <name>     Switch active agent (regenerates API key)
-
-All commands auto-prompt login if your session has expired.
-`,
-};
+  return h[command]?.();
+}
 
 // -- Main --
 
@@ -235,10 +278,10 @@ async function main(): Promise<void> {
 
   if (args.length === 0 || hasFlag(args, "--help", "-h")) {
     const cmd = args.find((a) => !a.startsWith("-"));
-    if (cmd && COMMAND_HELP[cmd]) {
-      console.log(COMMAND_HELP[cmd]);
+    if (cmd && buildCommandHelp(cmd)) {
+      console.log(buildCommandHelp(cmd));
     } else {
-      console.log(HELP);
+      console.log(buildHelp());
     }
     return;
   }
@@ -261,16 +304,16 @@ async function main(): Promise<void> {
     if (subcommand === "list") return agent.list();
     if (subcommand === "create") return agent.create(rest[0]);
     if (subcommand === "switch") return agent.switchAgent(rest[0]);
-    console.log(COMMAND_HELP.agent);
+    console.log(buildCommandHelp("agent"));
     return;
   }
 
   // Check for help on specific command
   if (subcommand === "--help" || subcommand === "-h") {
-    if (COMMAND_HELP[command]) {
-      console.log(COMMAND_HELP[command]);
+    if (buildCommandHelp(command)) {
+      console.log(buildCommandHelp(command));
     } else {
-      console.log(HELP);
+      console.log(buildHelp());
     }
     return;
   }
@@ -288,7 +331,7 @@ async function main(): Promise<void> {
       const wallet = await import("../src/commands/wallet.js");
       if (subcommand === "address") return wallet.address();
       if (subcommand === "balance") return wallet.balance();
-      console.log(COMMAND_HELP.wallet);
+      console.log(buildCommandHelp("wallet"));
       return;
     }
 
@@ -339,7 +382,7 @@ async function main(): Promise<void> {
         if (subcommand === "active") return job.active(opts);
         return job.completed(opts);
       }
-      console.log(COMMAND_HELP.job);
+      console.log(buildCommandHelp("job"));
       return;
     }
 
@@ -354,7 +397,7 @@ async function main(): Promise<void> {
         return token.launch(symbol, description, imageUrl);
       }
       if (subcommand === "info") return token.info();
-      console.log(COMMAND_HELP.token);
+      console.log(buildCommandHelp("token"));
       return;
     }
 
@@ -366,7 +409,7 @@ async function main(): Promise<void> {
         const value = rest.slice(1).join(" ");
         return profile.update(key, value);
       }
-      console.log(COMMAND_HELP.profile);
+      console.log(buildCommandHelp("profile"));
       return;
     }
 
@@ -379,7 +422,7 @@ async function main(): Promise<void> {
           return sell.resourceCreate(rest[1]);
         if (resourceSubcommand === "delete")
           return sell.resourceDelete(rest[1]);
-        console.log(COMMAND_HELP.sell);
+        console.log(buildCommandHelp("sell"));
         return;
       }
       if (subcommand === "init") return sell.init(rest[0]);
@@ -387,7 +430,7 @@ async function main(): Promise<void> {
       if (subcommand === "delete") return sell.del(rest[0]);
       if (subcommand === "list") return sell.list();
       if (subcommand === "inspect") return sell.inspect(rest[0]);
-      console.log(COMMAND_HELP.sell);
+      console.log(buildCommandHelp("sell"));
       return;
     }
 
@@ -398,13 +441,13 @@ async function main(): Promise<void> {
       if (subcommand === "status") return serve.status();
       if (subcommand === "logs")
         return serve.logs(hasFlag(rest, "--follow", "-f"));
-      console.log(COMMAND_HELP.serve);
+      console.log(buildCommandHelp("serve"));
       return;
     }
 
     default:
       console.error(`Unknown command: ${command}\n`);
-      console.log(HELP);
+      console.log(buildHelp());
       process.exit(1);
   }
 }

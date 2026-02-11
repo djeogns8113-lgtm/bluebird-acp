@@ -77,7 +77,9 @@ function validateOfferingJson(filePath: string): ValidationResult {
 
   if (!json.name || typeof json.name !== "string" || json.name.trim() === "") {
     result.valid = false;
-    result.errors.push('"name" field is required (non-empty string)');
+    result.errors.push(
+      'offering.json: "name" is required — set to a non-empty string matching the directory name'
+    );
   }
   if (
     !json.description ||
@@ -85,45 +87,70 @@ function validateOfferingJson(filePath: string): ValidationResult {
     json.description.trim() === ""
   ) {
     result.valid = false;
-    result.errors.push('"description" field is required (non-empty string)');
+    result.errors.push(
+      'offering.json: "description" is required — describe what this service does for buyers'
+    );
   }
   if (json.jobFee === undefined || json.jobFee === null) {
     result.valid = false;
-    result.errors.push('"jobFee" field is required (number)');
-  } else if (typeof json.jobFee !== "number") {
-    result.valid = false;
-    result.errors.push('"jobFee" must be a number');
-  }
-  if (json.jobFeeType === undefined || json.jobFeeType === null) {
-    result.valid = false;
-    result.errors.push(
-      '"jobFeeType" field is required ("fixed" or "percentage")'
-    );
-  } else if (json.jobFeeType !== "fixed" && json.jobFeeType !== "percentage") {
-    result.valid = false;
-    result.errors.push('"jobFeeType" must be either "fixed" or "percentage"');
-  }
-  // Validate jobFee based on jobFeeType
-  if (typeof json.jobFee === "number" && json.jobFeeType) {
-    if (json.jobFeeType === "fixed" && json.jobFee <= 0) {
+    // Validate jobFee presence, type, and value based on jobFeeType
+    if (json.jobFee === undefined || json.jobFee === null) {
       result.valid = false;
-      result.errors.push('"jobFee" must be > 0 for fixed fee type');
+      result.errors.push(
+        'offering.json: "jobFee" is required — set to a number (see "jobFeeType" docs)'
+      );
+    } else if (typeof json.jobFee !== "number") {
+      result.valid = false;
+      result.errors.push('offering.json: "jobFee" must be a number');
+    }
+
+    if (json.jobFeeType === undefined || json.jobFeeType === null) {
+      result.valid = false;
+      result.errors.push(
+        'offering.json: "jobFeeType" is required ("fixed" or "percentage")'
+      );
     } else if (
-      json.jobFeeType === "percentage" &&
-      (json.jobFee < 0.001 || json.jobFee > 0.99)
+      json.jobFeeType !== "fixed" &&
+      json.jobFeeType !== "percentage"
     ) {
       result.valid = false;
       result.errors.push(
-        '"jobFee" must be >= 0.001 and <= 0.99 (value in decimals, eg. 50% = 0.5) for percentage fee type'
+        'offering.json: "jobFeeType" must be either "fixed" or "percentage"'
       );
+    }
+
+    // Additional validation if both jobFee is a number and jobFeeType is set
+    if (typeof json.jobFee === "number" && json.jobFeeType) {
+      if (json.jobFeeType === "fixed") {
+        if (json.jobFee < 0) {
+          result.valid = false;
+          result.errors.push(
+            'offering.json: "jobFee" must be a non-negative number (fee in USDC per job) for fixed fee type'
+          );
+        }
+        if (json.jobFee === 0) {
+          result.warnings.push(
+            'offering.json: "jobFee" is 0; jobs will pay no fee to seller'
+          );
+        }
+      } else if (json.jobFeeType === "percentage") {
+        if (json.jobFee < 0.001 || json.jobFee > 0.99) {
+          result.valid = false;
+          result.errors.push(
+            'offering.json: "jobFee" must be >= 0.001 and <= 0.99 (value in decimals, eg. 50% = 0.5) for percentage fee type'
+          );
+        }
+      }
     }
   }
   if (json.requiredFunds === undefined || json.requiredFunds === null) {
     result.valid = false;
-    result.errors.push('"requiredFunds" field is required (boolean)');
+    result.errors.push(
+      'offering.json: "requiredFunds" is required — set to true if the job needs additional token transfer beyond the fee, false otherwise'
+    );
   } else if (typeof json.requiredFunds !== "boolean") {
     result.valid = false;
-    result.errors.push('"requiredFunds" must be a boolean');
+    result.errors.push('offering.json: "requiredFunds" must be true or false');
   }
 
   return result;
@@ -152,7 +179,9 @@ function validateHandlers(
 
   if (!executeJobPatterns.some((p) => p.test(content))) {
     result.valid = false;
-    result.errors.push('handlers.ts must export an "executeJob" function');
+    result.errors.push(
+      'handlers.ts: must export an "executeJob" function — this is the required handler that runs your service logic'
+    );
   }
 
   const hasValidate = [
@@ -168,18 +197,20 @@ function validateHandlers(
   ].some((p) => p.test(content));
 
   if (!hasValidate) {
-    result.warnings.push('Optional: "validateRequirements" handler not found.');
+    result.warnings.push(
+      'handlers.ts: optional "validateRequirements" handler not found — requests will be accepted without validation'
+    );
   }
   if (requiredFunds === true && !hasFunds) {
     result.valid = false;
     result.errors.push(
-      '"requiredFunds" is true — handlers.ts must export "requestAdditionalFunds"'
+      'handlers.ts: "requiredFunds" is true in offering.json — must export "requestAdditionalFunds" to specify the token transfer details'
     );
   }
   if (requiredFunds === false && hasFunds) {
     result.valid = false;
     result.errors.push(
-      '"requiredFunds" is false — handlers.ts must NOT export "requestAdditionalFunds"'
+      'handlers.ts: "requiredFunds" is false in offering.json — must NOT export "requestAdditionalFunds" (remove it, or set requiredFunds to true)'
     );
   }
 
@@ -212,19 +243,13 @@ export async function init(offeringName: string): Promise<void> {
 
   fs.mkdirSync(dir, { recursive: true });
 
-  const offeringJson = {
+  const offeringJson: Record<string, unknown> = {
     name: offeringName,
-    description: "TODO: Describe what this service does",
-    jobFee: 1,
-    jobFeeType: "fixed",
-    requiredFunds: false,
-    requirement: {
-      type: "object",
-      properties: {
-        input: { type: "string", description: "TODO: Describe input" },
-      },
-      required: ["input"],
-    },
+    description: "",
+    jobFee: null,
+    jobFeeType: null,
+    requiredFunds: null,
+    requirement: {},
   };
 
   fs.writeFileSync(
@@ -246,7 +271,7 @@ export function validateRequirements(request: any): ValidationResult {
   return { valid: true };
 }
 
-// Optional: provide custom payment request reason
+// Optional: provide custom payment request message
 export function requestPayment(request: any): string {
   // Return a custom message/reason for the payment request
   return "Request accepted";
@@ -505,6 +530,9 @@ function detectHandlers(offeringDir: string): string[] {
     /export\s+(async\s+)?function\s+validateRequirements\s*\(/.test(content)
   ) {
     found.push("validateRequirements");
+  }
+  if (/export\s+(async\s+)?function\s+requestPayment\s*\(/.test(content)) {
+    found.push("requestPayment");
   }
   if (
     /export\s+(async\s+)?function\s+requestAdditionalFunds\s*\(/.test(content)
