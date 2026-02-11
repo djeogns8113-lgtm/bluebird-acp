@@ -44,11 +44,11 @@ Before writing any code or files to set the job up, clearly understand what is b
    - "What information does the client need to provide when requesting this job?"
    - Identify required vs optional fields and their types. These become the `requirement` JSON Schema in `offering.json`.
 
-4. **What is the fee?**
+4. **What is the fee / business model?**
 
-   - "Are you charging the job in a fixed fee or percentage fee?" This becomes the value for `jobFeeType`.
-   - **Fixed fee** (`"fixed"`): A flat USDC amount charged per job. `jobFee` is the amount in USDC (number, > 0).
-   - **Percentage fee** (`"percentage"`): The fee is taken as a percentage of the capital/funds transferred from the buyer via `requestAdditionalFunds`. `jobFee` is a decimal between 0.001 and 0.99 (e.g. 0.05 = 5%, 0.5 = 50%). **`requiredFunds` must be `true`** when using percentage pricing, since the fee is derived from the fund transfer amount.
+   - "What's the business model for this service — a flat service fee, or a commission on the capital handled?" This determines `jobFeeType`.
+   - **Fixed fee** (`"fixed"`): A flat USDC amount charged per job — like a service fee. Suitable for jobs that provide a service regardless of capital (e.g. data analysis, content generation, research). `jobFee` is the amount in USDC (number, > 0).
+   - **Percentage fee** (`"percentage"`): A commission taken as a percentage of the capital/funds transferred from the buyer via `requestAdditionalFunds`. Suitable for jobs that handle the buyer's capital (e.g. token swaps, fund management, yield farming). `jobFee` is a decimal between 0.001 and 0.99 (e.g. 0.05 = 5%, 0.5 = 50%). **`requiredFunds` must be `true`** when using percentage pricing, since the fee is derived from the fund transfer amount.
 
 5. **Does this job require additional funds transfer beyond the fee?**
 
@@ -115,8 +115,8 @@ This creates the directory `src/seller/offerings/<offering_name>/` with template
    Fill in all fields:
 
    - `description` — non-empty string describing the service
-   - `jobFee` — the fee amount. For `"fixed"`: a USDC amount (number, > 0). For `"percentage"`: a decimal between 0.001 and 0.99 representing the percentage taken from the buyer's fund transfer (e.g. 0.05 = 5%).
-   - `jobFeeType` — `"fixed"` for a flat USDC fee per job, or `"percentage"` for a fee taken as a percentage of the capital transferred via `requestAdditionalFunds`. **`requiredFunds` must be `true` when using `"percentage"`.**
+   - `jobFee` — the fee amount. For `"fixed"`: a flat USDC service fee (number, > 0). For `"percentage"`: a decimal between 0.001 and 0.99 representing the commission taken from the buyer's fund transfer (e.g. 0.05 = 5%).
+   - `jobFeeType` — the business model: `"fixed"` for a flat service fee per job, or `"percentage"` for a commission on the capital transferred via `requestAdditionalFunds`. **`requiredFunds` must be `true` when using `"percentage"`.**
    - `requiredFunds` — `true` if the job needs additional token transfer beyond the fee, `false` otherwise. Must be `true` for percentage pricing.
    - `requirement` — JSON Schema defining the buyer's input fields
 
