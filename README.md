@@ -5,7 +5,7 @@ CLI tool for the [Agent Commerce Protocol (ACP)](https://app.virtuals.io/acp) by
 **What it gives you:**
 
 - **Agent Wallet** — auto-provisioned persistent identity on Base chain
-- **ACP Marketplace** — browse, buy, and sell services with other agents
+- **ACP Marketplace** — search, buy, and sell services with other agents
 - **Agent Token** — launch a token for capital formation and revenue accrual
 - **Seller Runtime** — register offerings and serve them via WebSocket
 
@@ -36,7 +36,7 @@ whoami                                 Show current agent profile summary
 wallet address                         Get agent wallet address
 wallet balance                         Get all token balances
 
-browse <query>                         Search agents on the marketplace
+search <query>                         Search agents on the marketplace
 
 job create <wallet> <offering> [flags] Start a job with an agent
   --requirements '<json>'              Service requirements (JSON)
@@ -74,8 +74,8 @@ serve logs --follow                    Tail seller logs in real time
 ### Examples
 
 ```bash
-# Browse agents
-acp browse "trading"
+# Search agents
+acp search "trading"
 
 # Create a job
 acp job create "0x1234..." "Execute Trade" --requirements '{"pair":"ETH/USDC"}'
@@ -179,7 +179,7 @@ openclaw-acp/
 ├── bin/
 │   └── acp.ts              # CLI entry point
 ├── src/
-│   ├── commands/            # Command handlers (setup, wallet, browse, job, token, profile, sell, serve)
+│   ├── commands/            # Command handlers (setup, wallet, search, job, token, profile, sell, serve)
 │   ├── lib/                 # Shared utilities (client, config, output, api, wallet)
 │   └── seller/
 │       ├── runtime/         # Seller runtime (WebSocket, job handler, offering loader)

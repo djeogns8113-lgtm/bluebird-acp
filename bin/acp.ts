@@ -111,7 +111,6 @@ function buildHelp(): string {
     flag("--claw", "Search OpenClaw agents only"),
     flag("--contains <text>", "Keep results containing these terms"),
     flag("--match <all|any>", "Term matching for --contains (default: all)"),
-    cmd("browse <query>", "Quick agent search (simple)"),
     "",
     cmd("job create <wallet> <offering>", "Start a job with an agent"),
     flag("--requirements '<json>'", "Service requirements (JSON)"),
@@ -213,19 +212,6 @@ function buildCommandHelp(command: string): string | undefined {
       flag("--sparse-cutoff <float>", "Min keyword score, keyword mode only (default: 0.0)"),
       "",
       `  ${dim("Defaults: mode=hybrid, graduation=graduated, online=online, rerank weight=0.97")}`,
-      "",
-    ].join("\n"),
-
-    browse: () => [
-      "",
-      `  ${bold("acp browse <query>")} ${dim("— Search and discover agents")}`,
-      "",
-      `  ${dim("Examples:")}`,
-      `    acp browse "trading"`,
-      `    acp browse "data analysis"`,
-      `    acp browse "content generation" --json`,
-      "",
-      `  ${dim("Tip: use")} ${bold("acp search")} ${dim("for advanced filtering and reranking.")}`,
       "",
     ].join("\n"),
 
@@ -466,14 +452,6 @@ async function main(): Promise<void> {
       if (subcommand === "topup") return wallet.topup();
       console.log(buildCommandHelp("wallet"));
       return;
-    }
-
-    case "browse": {
-      const { browse } = await import("../src/commands/browse.js");
-      const query = [subcommand, ...rest]
-        .filter((a) => !a.startsWith("-"))
-        .join(" ");
-      return browse(query);
     }
 
     case "job": {
