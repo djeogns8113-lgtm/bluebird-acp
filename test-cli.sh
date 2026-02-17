@@ -114,7 +114,7 @@ echo ""
 echo "Command Help"
 echo "--------------------------------------------------"
 run_test "wallet --help"                "$CLI wallet --help"
-run_test "search --help"                "$CLI search --help"
+run_test "browse --help"                "$CLI browse --help"
 run_test "job --help"                   "$CLI job --help"
 run_test "token --help"                 "$CLI token --help"
 run_test "profile --help"              "$CLI profile --help"
@@ -139,12 +139,12 @@ echo "--------------------------------------------------"
 run_test "whoami"                        "$CLI whoami"
 run_test_json "whoami --json"            "$CLI whoami --json"
 
-# -- Search --
+# -- Browse --
 echo ""
-echo "Search"
+echo "Browse"
 echo "--------------------------------------------------"
-run_test "search trading"               "$CLI search trading"
-run_test_json "search trading --json"   "$CLI search trading --json"
+run_test "browse trading"               "$CLI browse trading"
+run_test_json "browse trading --json"   "$CLI browse trading --json"
 
 # -- Profile --
 echo ""
