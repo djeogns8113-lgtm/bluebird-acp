@@ -1,0 +1,8 @@
+{
+  "name": "bluebird_btc_outlook",
+  "description": "Bluebird 개발자의 비트코인 저점 예측 및 상승 시나리오: 저점 56-58K 예상, 일봉 상승 다이버전스 발생 시 공격적 롱 매수 후 80K 목표 매도 전략",
+  "jobFee": 100,
+  "jobFeeType": "fixed",
+  "requiredFunds": false,
+  "requirement": {}
+}

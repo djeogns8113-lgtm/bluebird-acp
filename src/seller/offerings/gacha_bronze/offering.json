@@ -1,0 +1,8 @@
+{
+  "name": "btc_5min_prediction",
+  "description": "5분 후 비트코인 가격이 상승할지 하락할지 랜덤으로 예측해드립니다. 재미로 즐기세요!",
+  "jobFee": 10,
+  "jobFeeType": "fixed",
+  "requiredFunds": false,
+  "requirement": {}
+}

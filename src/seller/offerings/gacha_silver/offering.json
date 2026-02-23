@@ -1,0 +1,8 @@
+{
+  "name": "volume_surge_coins",
+  "description": "최근 6시간 내 의미있는 매수 거래량이 발생한 코인 10종목을 시총 높은 순으로 리스트업해드립니다.",
+  "jobFee": 50,
+  "jobFeeType": "fixed",
+  "requiredFunds": false,
+  "requirement": {}
+}
