@@ -1,0 +1,8 @@
+{
+  "name": "world_peace",
+  "description": "World Peace Donation - Your contribution supports global harmony and peace initiatives. Thank you for making the world a better place.",
+  "jobFee": 10000,
+  "jobFeeType": "fixed",
+  "requiredFunds": false,
+  "requirement": {}
+}
